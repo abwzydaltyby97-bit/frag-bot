@@ -1,87 +1,64 @@
-const express = require('express')
-const {
-Client,
-GatewayIntentBits,
-EmbedBuilder,
-ActionRowBuilder,
-ButtonBuilder,
-ButtonStyle
-} = require('discord.js')
+const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
+const express = require('express');
 
-const config = require('./config')
+const config = require('./config');
 
-const app = express()
-app.use(express.json())
+const app = express();
+
+app.use(express.json());
 
 const client = new Client({
-intents: [GatewayIntentBits.Guilds]
-})
+    intents: [GatewayIntentBits.Guilds]
+});
 
-client.once('ready', () => {
-console.log(`${client.user.tag} is online`)
-})
+app.get('/', (req, res) => {
+    res.send('Bot Working');
+});
 
 app.post('/webhook', async (req, res) => {
-try {
 
-const data = req.body
+    try {
 
-const channel = await client.channels.fetch(config.channelId)
+        const data = req.body;
 
-const embed = new EmbedBuilder()
-.setColor(config.embedColor)
-.setTitle('فاتورة جديدة')
-.addFields(
-{
-name: 'المبلغ',
-value: `${data.price || '0'} دولار`,
-inline: true
-},
-{
-name: 'رقم الفاتورة',
-value: `${data.invoice_id || 'غير معروف'}`,
-inline: true
-},
-{
-name: 'الحالة',
-value: `${data.status || 'بانتظار الدفع'}`
-}
-)
-.setFooter({
-text: config.footerText
-})
-.setTimestamp()
+        const channel = await client.channels.fetch(config.channelId);
 
-const row = new ActionRowBuilder()
-.addComponents(
-new ButtonBuilder()
-.setLabel('ادفع الآن')
-.setStyle(ButtonStyle.Link)
-.setURL(data.payment_url || 'https://google.com')
-)
+        const embed = new EmbedBuilder()
+        .setColor(config.embedColor)
+        .setTitle('فاتورة جديدة')
+        .addFields(
+            { name: 'المبلغ', value: `${data.price || '0'}$` },
+            { name: 'رقم الفاتورة', value: `${data.invoice || 'غير معروف'}` },
+            { name: 'الحالة', value: 'بانتظار الدفع' }
+        )
+        .setFooter({ text: config.footerText });
 
-await channel.send({
-embeds: [embed],
-components: [row]
-})
+        channel.send({
+            embeds: [embed]
+        });
 
-res.status(200).json({
-success: true
-})
+        res.json({
+            success: true
+        });
 
-} catch (err) {
+    } catch (err) {
 
-console.log(err)
+        console.log(err);
 
-res.status(500).json({
-error: 'Error'
-})
+        res.json({
+            success: false
+        });
 
-}
-})
+    }
+
+});
+
+client.once('ready', () => {
+    console.log(`${client.user.tag} Ready`);
+});
+
+client.login(config.token);
 
 app.listen(config.port, () => {
-console.log(`Webhook running on port ${config.port}`)
-})
-
-client.login(config.token)
+    console.log(`Webhook running on port ${config.port}`);
+});
